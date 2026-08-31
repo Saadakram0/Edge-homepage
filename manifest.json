@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Edge Style New Tab",
+  "version": "1.0",
+  "description": "Custom Edge-styled homepage with widgets and dark mode.",
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": []
+}
