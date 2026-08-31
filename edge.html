@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge New Tab</title>
+    <style>
+        :root {
+            --bg-overlay: rgba(0, 0, 0, 0.45);
+            --glass-bg: rgba(20, 20, 20, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #ffffff;
+            --accent: #0078d4;
+            --accent-hover: #106ebe;
+            --panel-bg: rgba(25, 25, 25, 0.95);
+            --tile-hover: rgba(255, 255, 255, 0.12);
+        }
+
+        [data-theme="light"] {
+            --bg-overlay: rgba(255, 255, 255, 0.25);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(0, 0, 0, 0.12);
+            --text-main: #1a1a1a;
+            --accent: #0078d4;
+            --accent-hover: #005a9e;
+            --panel-bg: rgba(250, 250, 250, 0.95);
+            --tile-hover: rgba(0, 0, 0, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; transition: background 0.2s, color 0.2s, transform 0.2s; }
+        
+        body { 
+            height: 100vh; 
+            color: var(--text-main); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            overflow-y: auto; 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        #particles-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+        #bg-tint { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: var(--bg-overlay); }
+        
+        .top-toolbar { width: 100%; display: flex; justify-content: flex-end; padding: 20px 30px; gap: 12px; }
+        
+        .icon-btn { 
+            background: var(--glass-bg); 
+            border: 1px solid var(--glass-border); 
+            color: var(--text-main); 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 0.95rem; 
+            font-weight: 500;
+            display: flex; 
+            align-items: center; 
+            gap: 6px;
+            backdrop-filter: blur(12px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .icon-btn:hover { transform: translateY(-2px); background: var(--glass-border); }
+        .icon-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .container { max-width: 860px; width: 90%; display: flex; flex-direction: column; align-items: center; margin-top: 4vh; z-index: 1; padding-bottom: 50px; }
+        
+        .greeting-area { text-align: center; margin-bottom: 25px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        #clock { font-size: 4.5rem; font-weight: 600; letter-spacing: -1px; }
+        #date-greeting { font-size: 1.15rem; opacity: 0.9; font-weight: 400; }
+
+        /* Search Section */
+        .search-wrapper { width: 100%; max-width: 620px; position: relative; margin-bottom: 10px; }
+        .search-bar { 
+            width: 100%; 
+            padding: 16px 25px 16px 55px; 
+            border-radius: 30px; 
+            border: 1px solid var(--glass-border); 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(16px); 
+            color: var(--text-main); 
+            font-size: 1.05rem; 
+            outline: none; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); 
+        }
+        .search-bar::placeholder { color: var(--text-main); opacity: 0.7; }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); opacity: 0.75; }
+
+        /* Recent Search History Dropdown / Chips */
+        .search-history-container {
+            width: 100%;
+            max-width: 620px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        .history-chip {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+        .history-chip:hover { background: var(--tile-hover); }
+        .history-chip .del-hist { font-size: 0.75rem; opacity: 0.6; }
+        .history-chip .del-hist:hover { opacity: 1; color: #ff4d4d; }
+
+        /* Section Headings */
+        .section-title { width: 100%; max-width: 800px; text-align: left; font-size: 1.05rem; margin: 15px 0 12px 0; font-weight: 600; display: flex; align-items: center; gap: 8px; letter-spacing: 0.3px; }
+        
+        /* Grid Layout */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; width: 100%; max-width: 800px; margin-bottom: 25px; }
+        
+        .tile { 
+            position: relative; 
+            background: var(--glass-bg); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 14px; 
+            padding: 16px 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            text-decoration: none; 
+            color: var(--text-main); 
+            font-size: 0.85rem; 
+            font-weight: 500;
+            cursor: pointer; 
+            backdrop-filter: blur(12px); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .tile:hover { transform: translateY(-4px); background: var(--tile-hover); }
+        .tile img, .tile .tile-icon { width: 36px; height: 36px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        
+        .tile-add { border: 2px dashed var(--glass-border); background: rgba(0, 0, 0, 0.15); }
+        .tile-add:hover { border-color: var(--accent); color: var(--accent); }
+
+        .delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .editing .delete-btn { display: flex; align-items: center; justify-content: center; }
+
+        /* Widgets Section */
+        .widgets-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; width: 100%; max-width: 800px; margin-top: 10px; }
+        .widget-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; backdrop-filter: blur(12px); }
+        .widget-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        
+        /* To-Do Widget */
+        .todo-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .todo-input-row input { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-main); outline: none; }
+        .todo-list { list-style: none; max-height: 140px; overflow-y: auto; }
+        .todo-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .todo-item.done span { text-decoration: line-through; opacity: 0.5; }
+
+        /* Notes Widget */
+        #notes-area { width: 100%; height: 130px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); padding: 10px; outline: none; resize: none; font-size: 0.9rem; }
+
+        /* Settings Drawer */
+        #settings-panel { position: fixed; right: -380px; top: 0; width: 380px; height: 100%; background: var(--panel-bg); z-index: 100; padding: 30px; transition: right 0.3s ease; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.3); }
+        #settings-panel.open { right: 0; }
+        .btn-primary { background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 600; font-size: 0.95rem; }
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        .setting-box { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .bg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        .bg-thumb { height: 50px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; }
+        .bg-thumb:hover { transform: scale(1.05); }
+
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 150; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--panel-bg); padding: 25px; border-radius: 16px; z-index: 200; width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid var(--glass-border); }
+        .modal input { width: 100%; padding: 10px 14px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-main); outline: none; }
+    </style>
+</head>
+<body>
+    <canvas id="particles-canvas"></canvas>
+    <div id="bg-tint"></div>
+
+    <header class="top-toolbar">
+        <button class="icon-btn" id="btn-edit-mode" title="Toggle Edit Mode">✏️ Edit Mode</button>
+        <button class="icon-btn" id="btn-theme" title="Toggle Theme">🌓 Mode</button>
+        <button class="icon-btn" id="btn-settings" title="Settings">⚙️ Settings</button>
+    </header>
+
+    <div class="container">
+        <div class="greeting-area">
+            <div id="clock">00:00</div>
+            <div id="date-greeting">Loading...</div>
+        </div>
+
+        <div class="search-wrapper">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-bar" class="search-bar" placeholder="Search the web with Google...">
+        </div>
+
+        <!-- Recent Search History Chips -->
+        <div class="search-history-container" id="search-history-list"></div>
+
+        <div class="section-title">📌 Quick Shortcuts <span style="font-size:0.8rem; font-weight:normal; opacity:0.7; margin-left:10px;">(Right-click to edit)</span></div>
+        <div class="grid-container" id="shortcuts-container"></div>
+
+        <!-- Widgets Area (To-Do & Quick Notes) -->
+        <div class="widgets-row">
+            <div class="widget-card">
+                <div class="widget-title">✅ Tasks</div>
+                <div class="todo-input-row">
+                    <input type="text" id="todo-input" placeholder="New task...">
+                    <button class="btn-primary" id="btn-add-todo" style="width: auto; padding: 8px 14px;">Add</button>
+                </div>
+                <ul class="todo-list" id="todo-list"></ul>
+            </div>
+
+            <div class="widget-card">
+                <div class="widget-title">📝 Quick Notes</div>
+                <textarea id="notes-area" placeholder="Jot down thoughts or notes here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Drawer -->
+    <aside id="settings-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2>Settings & Usage</h2>
+            <button id="close-settings" style="background:none; border:none; font-size:1.5rem; color:var(--text-main); cursor:pointer;">&times;</button>
+        </div>
+        
+        <!-- Usage Time Tracker Card -->
+        <div class="setting-box">
+            <h3>⏱️ Usage Tracker</h3>
+            <p style="font-size:0.85rem; opacity:0.8; margin-top:5px;">Time spent on New Tab today:</p>
+            <div id="today-time" style="font-size:1.4rem; font-weight:bold; color:var(--accent); margin: 6px 0;">0m 0s</div>
+            <p style="font-size:0.75rem; opacity:0.6;">Total recorded time: <span id="total-time">0m 0s</span></p>
+        </div>
+
+        <!-- Background Wallpaper & Moving Particles -->
+        <div class="setting-box">
+            <h3>🎨 Background Style</h3>
+            <label style="display:flex; align-items:center; gap:8px; margin: 10px 0; font-size:0.9rem; cursor:pointer;">
+                <input type="checkbox" id="toggle-particles"> Enable Moving Particles Effect
+            </label>
+            <p style="font-size:0.85rem; opacity:0.8;">Select Background Preset:</p>
+            <div class="bg-grid" id="bg-presets"></div>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <button class="btn-primary" id="btn-open-add-modal">+ Add New Shortcut / App</button>
+        </div>
+    </aside>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Modal for Adding Shortcuts -->
+    <div class="modal" id="add-modal">
+        <h3 style="margin-bottom: 15px;">Add Shortcut or App</h3>
+        <input type="text" id="shortcut-name" placeholder="Name (e.g., YouTube, Calculator)">
+        <input type="text" id="shortcut-url" placeholder="URL (https://...)">
+        <input type="text" id="shortcut-icon" placeholder="Optional Emoji Icon (e.g. 🚀, 🧮)">
+        <button class="btn-primary" id="btn-save-shortcut">Add to Grid</button>
+    </div>
+
+    <!-- Modal for Renaming/Editing Shortcut -->
+    <div class="modal" id="edit-shortcut-modal">
+        <h3 style="margin-bottom: 15px;">Rename Shortcut</h3>
+        <input type="text" id="edit-shortcut-name" placeholder="Name">
+        <input type="text" id="edit-shortcut-url" placeholder="URL">
+        <input type="text" id="edit-shortcut-icon" placeholder="Emoji Icon (optional)">
+        <button class="btn-primary" id="btn-update-shortcut">Save Changes</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
