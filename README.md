@@ -36,4 +36,4 @@ To use this project as your browser's default New Tab page:
 
 1. **Clone or Download** this repository to your computer:
    ```bash
-   git clone [https://github.com/Saadakram0/edge-homepage.git](https://github.com/your-username/edge-homepage.git)
+   git clone [https://github.com/Saadakram0/edge-homepage.git](https://github.com/Saadakram0/edge-homepage.git)
